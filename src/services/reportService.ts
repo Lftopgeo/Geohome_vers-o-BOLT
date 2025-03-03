@@ -1,11 +1,18 @@
 import { format } from 'date-fns';
 import type { InspectionReport } from '../types/report';
+import { PDFGenerator } from './pdfGenerator';
+import { ReportLabPdfService } from './reportlabPdfService';
 
 export class ReportService {
   static async generatePDF(report: InspectionReport): Promise<Blob> {
-    // This would typically call your PDF generation API
-    // For now, we'll use @react-pdf/renderer in the component
-    throw new Error('Not implemented');
+    try {
+      // Try to use the ReportLab service first
+      return await ReportLabPdfService.generatePDF(report);
+    } catch (error) {
+      console.warn('Failed to generate PDF with ReportLab, falling back to jsPDF:', error);
+      // Fall back to the original PDF generator
+      return await PDFGenerator.generatePDF(report);
+    }
   }
 
   static async uploadToCloud(file: Blob): Promise<string> {
