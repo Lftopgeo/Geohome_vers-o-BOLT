@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import type { InspectionSummary } from '../../types/dashboard';
 
 interface CalendarWidgetProps {
@@ -8,6 +8,12 @@ interface CalendarWidgetProps {
 
 export function CalendarWidget({ inspections }: CalendarWidgetProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipContent, setTooltipContent] = useState<JSX.Element | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   
   // Funções para navegação no calendário
   const goToPreviousMonth = () => {
@@ -44,6 +50,102 @@ export function CalendarWidget({ inspections }: CalendarWidgetProps) {
     });
   };
   
+  // Obter inspeções para uma data específica
+  const getInspectionsForDate = (date: Date) => {
+    return inspections.filter(inspection => {
+      const inspDate = new Date(inspection.date);
+      return (
+        inspDate.getDate() === date.getDate() &&
+        inspDate.getMonth() === date.getMonth() &&
+        inspDate.getFullYear() === date.getFullYear()
+      );
+    });
+  };
+  
+  // Função para mostrar o tooltip
+  const showInspectionTooltip = (event: React.MouseEvent | null, date: Date) => {
+    const dateInspections = getInspectionsForDate(date);
+    
+    if (dateInspections.length > 0) {
+      // Armazenar o conteúdo do tooltip como um objeto React
+      setTooltipContent(
+        <div>
+          <p className="font-medium mb-1">{date.toLocaleDateString('pt-BR')}</p>
+          <p className="text-sm mb-2">{dateInspections.length} vistoria(s):</p>
+          <ul className="text-xs list-disc pl-4">
+            {dateInspections.map(insp => (
+              <li key={insp.id}>{insp.address.split(',')[0]}</li>
+            ))}
+          </ul>
+        </div>
+      );
+      
+      if (event) {
+        // Calcular posição do tooltip considerando os limites da tela
+        const tooltipWidth = 250; // Largura máxima do tooltip
+        const tooltipHeight = 150; // Altura estimada do tooltip
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        let x = event.clientX + 10;
+        let y = event.clientY + 10;
+        
+        // Ajustar posição horizontal se estiver perto da borda direita
+        if (x + tooltipWidth > windowWidth) {
+          x = windowWidth - tooltipWidth - 10;
+        }
+        
+        // Ajustar posição vertical se estiver perto da borda inferior
+        if (y + tooltipHeight > windowHeight) {
+          y = windowHeight - tooltipHeight - 10;
+        }
+        
+        // Posicionar o tooltip
+        setTooltipPosition({ x, y });
+      }
+      
+      setShowTooltip(true);
+    }
+  };
+  
+  // Fechar o tooltip
+  const hideTooltip = () => {
+    setShowTooltip(false);
+  };
+  
+  // Gerenciar navegação por teclado
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>, date: Date) => {
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        setSelectedDate(date);
+        showInspectionTooltip(null, date);
+        break;
+      case 'Escape':
+        event.preventDefault();
+        setSelectedDate(null);
+        hideTooltip();
+        break;
+      default:
+        break;
+    }
+  };
+  
+  // Efeito para fechar o tooltip quando clicar fora dele
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        hideTooltip();
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
   // Renderizar o calendário
   const renderCalendar = () => {
     const year = currentDate.getFullYear();
@@ -66,7 +168,13 @@ export function CalendarWidget({ inspections }: CalendarWidgetProps) {
     
     // Adicionar dias vazios do mês anterior
     for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(<div key={`empty-${i}`} className="h-8 w-8"></div>);
+      days.push(
+        <div 
+          key={`empty-${i}`} 
+          className="h-8 w-8"
+          role="presentation"
+        ></div>
+      );
     }
     
     // Adicionar dias do mês atual
@@ -74,21 +182,7 @@ export function CalendarWidget({ inspections }: CalendarWidgetProps) {
       const date = new Date(year, month, day);
       const isToday = new Date().toDateString() === date.toDateString();
       const hasEvents = hasInspections(date);
-      
-      // Obter detalhes das inspeções para exibir no tooltip
-      const dateInspections = inspections.filter(inspection => {
-        const inspDate = new Date(inspection.date);
-        return (
-          inspDate.getDate() === date.getDate() &&
-          inspDate.getMonth() === date.getMonth() &&
-          inspDate.getFullYear() === date.getFullYear()
-        );
-      });
-      
-      // Criar texto para o tooltip com informações das inspeções
-      const tooltipText = hasEvents 
-        ? `${dateInspections.length} vistoria(s) agendada(s): ${dateInspections.map(i => i.address.split(',')[0]).join(', ')}`
-        : '';
+      const isSelected = selectedDate?.toDateString() === date.toDateString();
       
       days.push(
         <div 
@@ -97,26 +191,43 @@ export function CalendarWidget({ inspections }: CalendarWidgetProps) {
             h-8 w-8 flex items-center justify-center rounded-full text-sm
             ${isToday ? 'bg-[#DDA76A] text-white' : ''}
             ${hasEvents && !isToday ? 'font-bold' : ''}
+            ${isSelected ? 'ring-2 ring-[#DDA76A] ring-offset-2' : ''}
             ${!isToday && !hasEvents ? 'text-gray-700' : ''}
-            relative cursor-pointer hover:bg-gray-100
+            relative cursor-pointer hover:bg-gray-100 transition-colors
+            focus:outline-none focus:ring-2 focus:ring-[#DDA76A] focus:ring-offset-2
           `}
-          title={tooltipText}
+          onClick={(e) => {
+            setSelectedDate(date);
+            if (hasEvents) {
+              showInspectionTooltip(e, date);
+            }
+          }}
+          onMouseEnter={(e) => hasEvents && showInspectionTooltip(e, date)}
+          onMouseLeave={hideTooltip}
+          onKeyDown={(e) => handleKeyDown(e, date)}
+          role="button"
+          tabIndex={0}
+          aria-label={`${day} de ${monthNames[month]} de ${year}${hasEvents ? `, ${getInspectionsForDate(date).length} vistorias agendadas` : ''}`}
+          aria-selected={isSelected}
         >
           {day}
           {hasEvents && (
-            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#DDA76A] rounded-full"></span>
+            <span 
+              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-[#DDA76A] rounded-full" 
+              aria-hidden="true"
+            ></span>
           )}
         </div>
       );
     }
     
     return (
-      <div>
+      <div ref={calendarRef}>
         {/* Cabeçalho do calendário */}
         <div className="flex justify-between items-center mb-4">
           <button 
             onClick={goToPreviousMonth}
-            className="p-1 rounded-full hover:bg-gray-100"
+            className="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#DDA76A]"
             title="Mês anterior"
             aria-label="Ir para o mês anterior"
           >
@@ -129,7 +240,7 @@ export function CalendarWidget({ inspections }: CalendarWidgetProps) {
           
           <button 
             onClick={goToNextMonth}
-            className="p-1 rounded-full hover:bg-gray-100"
+            className="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#DDA76A]"
             title="Próximo mês"
             aria-label="Ir para o próximo mês"
           >
@@ -138,24 +249,63 @@ export function CalendarWidget({ inspections }: CalendarWidgetProps) {
         </div>
         
         {/* Dias da semana */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-1 mb-2" role="rowgroup">
           {weekdays.map(day => (
-            <div key={day} className="text-center text-xs font-medium text-gray-500">
+            <div 
+              key={day} 
+              className="text-center text-xs font-medium text-gray-500"
+              aria-hidden="true"
+            >
               {day}
             </div>
           ))}
         </div>
         
         {/* Dias do mês */}
-        <div className="grid grid-cols-7 gap-1">
+        <div 
+          className="grid grid-cols-7 gap-1" 
+          role="grid"
+          aria-label={`Calendário de ${monthNames[month]} de ${year}`}
+        >
           {days}
         </div>
+        
+        {/* Legenda */}
+        <div className="mt-4 flex items-center text-xs text-gray-500">
+          <Info size={12} className="mr-1" />
+          <span>Clique nos dias com pontos para ver detalhes das vistorias</span>
+        </div>
+        
+        {/* Tooltip */}
+        {showTooltip && (
+          <div 
+            ref={tooltipRef}
+            className="absolute z-10 p-3 bg-white shadow-lg rounded-lg border border-gray-200 text-left"
+            style={{
+              top: `${tooltipPosition.y + 10}px`,
+              left: `${tooltipPosition.x + 10}px`,
+              maxWidth: '250px'
+            }}
+            role="tooltip"
+          >
+            <div className="text-sm">
+              {tooltipContent}
+            </div>
+            <button 
+              className="absolute top-1 right-1 text-gray-400 hover:text-gray-600"
+              onClick={hideTooltip}
+              aria-label="Fechar informações"
+            >
+              ×
+            </button>
+          </div>
+        )}
       </div>
     );
   };
   
   return (
-    <div>
+    <div className="relative">
       {renderCalendar()}
     </div>
   );

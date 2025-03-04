@@ -1,4 +1,6 @@
 export type InspectionCondition = 'optimal' | 'good' | 'regular' | 'bad';
+export type InspectionStatus = 'good' | 'regular' | 'bad';
+export type UrgencyLevel = 'low' | 'medium' | 'high';
 
 export interface MeterInspection {
   meterNumber: string;
@@ -45,4 +47,14 @@ export interface InspectionReport {
     date: Date;
     signature?: string;
   };
+}
+
+export interface InspectionItem {
+  id: string;
+  name: string;
+  description: string;
+  status: 'good' | 'regular' | 'bad';
+  urgency?: UrgencyLevel;
+  observations?: string;
+  photos: string[];
 }

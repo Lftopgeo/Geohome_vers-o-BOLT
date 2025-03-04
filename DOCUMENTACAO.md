@@ -290,3 +290,37 @@ O Geohome representa uma solução completa e profissional para vistorias técni
 - Implementação de solução alternativa para problemas de conexão com o Supabase
 - Substituição do componente de gráficos por visualização baseada em HTML/CSS
 - Melhorias de acessibilidade no calendário e outros componentes
+
+## 9. Funcionalidades Implementadas
+
+### Dashboard
+
+- Visão geral das vistorias
+- Cards de estatísticas
+- Lista de vistorias recentes
+- Widgets de atividades e calendário
+- Gráficos de desempenho
+
+### Formulário de Vistoria
+
+- Seleção de tipo de imóvel
+- Detalhes do imóvel
+- Detalhes da vistoria
+- Busca automática de endereço por CEP
+- Validação de formulário
+- Fluxo de etapas
+
+## 10. Serviços
+
+### API
+
+- Conexão com Supabase
+- Fallback para dados mockados
+- Tratamento de erros
+
+### CEP
+
+- Busca automática de endereço por CEP usando a API ViaCEP
+- Preenchimento automático dos campos de endereço
+- Validação de CEP
+- Formatação de CEP

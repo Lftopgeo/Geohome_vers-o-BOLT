@@ -1,13 +1,10 @@
 import React from 'react';
 import { PropertyTypeOption } from './PropertyTypeOption';
+import { usePropertyContext } from '../../../contexts/PropertyContext';
 import type { PropertyType } from '../../../types/property';
 
-interface PropertyTypeSelectorProps {
-  selectedType: PropertyType | null;
-  onTypeSelect: (type: PropertyType) => void;
-}
-
-export function PropertyTypeSelector({ selectedType, onTypeSelect }: PropertyTypeSelectorProps) {
+export function PropertyTypeSelector() {
+  const { propertyType, setPropertyType } = usePropertyContext();
   const propertyTypes: PropertyType[] = ['apartment', 'house', 'land', 'commercial'];
 
   return (
@@ -16,8 +13,8 @@ export function PropertyTypeSelector({ selectedType, onTypeSelect }: PropertyTyp
         <PropertyTypeOption
           key={type}
           type={type}
-          isSelected={selectedType === type}
-          onSelect={() => onTypeSelect(type)}
+          isSelected={propertyType === type}
+          onSelect={() => setPropertyType(type)}
         />
       ))}
     </div>

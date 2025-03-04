@@ -17,12 +17,6 @@ export function ExternalInspectionItem({ item, onUpdate }: ExternalInspectionIte
     bad: 'bg-red-100 text-red-800'
   };
 
-  const urgencyColors: Record<UrgencyLevel, string> = {
-    low: 'bg-blue-100 text-blue-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800'
-  };
-
   const handlePhotoUpload = (files: FileList) => {
     const newPhotos = Array.from(files).map(file => URL.createObjectURL(file));
     onUpdate({ photos: [...item.photos, ...newPhotos] });
@@ -59,6 +53,8 @@ export function ExternalInspectionItem({ item, onUpdate }: ExternalInspectionIte
                 value={item.status}
                 onChange={(e) => onUpdate({ status: e.target.value as InspectionItem['status'] })}
                 className="w-full px-3 py-2 border rounded-lg bg-white"
+                title="Selecione o estado do item"
+                aria-label="Estado do item"
               >
                 <option value="good">Bom</option>
                 <option value="regular">Regular</option>
@@ -74,6 +70,8 @@ export function ExternalInspectionItem({ item, onUpdate }: ExternalInspectionIte
                 value={item.urgency || 'low'}
                 onChange={(e) => onUpdate({ urgency: e.target.value as UrgencyLevel })}
                 className="w-full px-3 py-2 border rounded-lg bg-white"
+                title="Selecione o nível de urgência"
+                aria-label="Nível de urgência"
               >
                 <option value="low">Baixa</option>
                 <option value="medium">Média</option>

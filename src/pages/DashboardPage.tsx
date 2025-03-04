@@ -10,7 +10,9 @@ import {
   Building,
   Plus,
   Search,
-  Filter
+  Filter,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -20,12 +22,19 @@ import { StatCard } from '../components/Dashboard/StatCard';
 import { InspectionCard } from '../components/Dashboard/InspectionCard';
 import { RecentActivityCard } from '../components/Dashboard/RecentActivityCard';
 import { CalendarWidget } from '../components/Dashboard/CalendarWidget';
+import { PerformanceChart } from '../components/Dashboard/PerformanceChart';
 
 // Serviços de API
-import { getInspections, getActivities, getDashboardStats } from '../services/api';
+import { 
+  getInspections, 
+  getActivities, 
+  getDashboardStats, 
+  getConnectionStatus, 
+  retryConnection 
+} from '../services/api';
 
 // Tipos de dados
-import type { InspectionSummary, Activity, DashboardStats } from '../types/dashboard';
+import type { InspectionSummary, Activity, DashboardStats, ChartData } from '../types/dashboard';
 
 export function DashboardPage() {
   const [inspections, setInspections] = useState<InspectionSummary[]>([]);
@@ -39,11 +48,30 @@ export function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus] = useState<string>('all');
   const [searchQuery] = useState<string>('');
+  const [connectionStatus, setConnectionStatus] = useState({ isSupabaseAvailable: false, lastChecked: '' });
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  // Dados para o gráfico de vistorias por tipo de imóvel
+  const propertyTypeChartData: ChartData = {
+    labels: ['Apto', 'Casa', 'Comercial', 'Industrial'],
+    values: [42, 28, 18, 12],
+    colors: ['#4F46E5', '#10B981', '#F59E0B', '#EC4899']
+  };
+
+  // Dados para o gráfico de vistorias por mês
+  const monthlyChartData: ChartData = {
+    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+    values: [18, 22, 30, 25, 28, 32]
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
+        
+        // Verificar status da conexão
+        const status = getConnectionStatus();
+        setConnectionStatus(status);
         
         // Buscar dados das inspeções
         const inspectionsData = await getInspections();
@@ -66,6 +94,19 @@ export function DashboardPage() {
     fetchDashboardData();
   }, []);
 
+  // Função para tentar reconectar ao Supabase
+  const handleRetryConnection = async () => {
+    try {
+      setIsRetrying(true);
+      const newStatus = await retryConnection();
+      setConnectionStatus(newStatus);
+    } catch (error) {
+      console.error('Erro ao tentar reconectar:', error);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   // Filtrar inspeções
   const filteredInspections = inspections.filter(inspection => {
     if (filterStatus !== 'all' && inspection.status !== filterStatus) return false;
@@ -84,7 +125,23 @@ export function DashboardPage() {
             Dashboard
           </h1>
           
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 items-center">
+            {/* Status da conexão com Supabase */}
+            <div className={`flex items-center px-3 py-1 rounded-lg mr-4 text-sm ${connectionStatus.isSupabaseAvailable ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+              <Database size={16} className="mr-1" />
+              <span>{connectionStatus.isSupabaseAvailable ? 'Conectado' : 'Usando dados locais'}</span>
+              
+              <button 
+                onClick={handleRetryConnection}
+                disabled={isRetrying}
+                className="ml-2 p-1 rounded-full hover:bg-opacity-20 hover:bg-black transition-colors"
+                title="Tentar reconectar"
+                aria-label="Tentar reconectar ao Supabase"
+              >
+                <RefreshCw size={14} className={`${isRetrying ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+            
             <Link 
               to="/nova-vistoria" 
               className="flex items-center px-4 py-2 bg-[#DDA76A] text-white rounded-lg hover:bg-[#C89355] transition-colors"
@@ -255,35 +312,20 @@ export function DashboardPage() {
           </div>
         </div>
         
-        {/* Gráficos de Desempenho - Substituídos por mensagens informativas */}
+        {/* Gráficos de Desempenho - Melhorados com o novo componente PerformanceChart */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-6 border-b border-gray-100">
               <h2 className="text-xl font-semibold text-gray-800">Vistorias por Tipo de Imóvel</h2>
             </div>
             <div className="p-6">
-              <div className="flex flex-col items-center justify-center h-[250px] text-center">
-                <Building size={48} className="text-gray-300 mb-4" />
-                <p className="text-gray-500 mb-2">Dados estatísticos</p>
-                <div className="grid grid-cols-2 gap-4 w-full max-w-md mt-4">
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="font-bold text-lg">42%</p>
-                    <p className="text-sm text-gray-500">Apartamento</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="font-bold text-lg">28%</p>
-                    <p className="text-sm text-gray-500">Casa</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="font-bold text-lg">18%</p>
-                    <p className="text-sm text-gray-500">Comercial</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="font-bold text-lg">12%</p>
-                    <p className="text-sm text-gray-500">Industrial</p>
-                  </div>
-                </div>
-              </div>
+              <PerformanceChart 
+                data={propertyTypeChartData}
+                title="Distribuição por tipo de imóvel"
+                height={250}
+                showValues={true}
+                animated={true}
+              />
             </div>
           </div>
           
@@ -292,31 +334,13 @@ export function DashboardPage() {
               <h2 className="text-xl font-semibold text-gray-800">Vistorias por Mês</h2>
             </div>
             <div className="p-6">
-              <div className="flex flex-col items-center justify-center h-[250px] text-center">
-                <TrendingUp size={48} className="text-gray-300 mb-4" />
-                <p className="text-gray-500 mb-2">Tendência de crescimento</p>
-                <div className="w-full max-w-md mt-4">
-                  <div className="flex justify-between items-end h-32 px-2">
-                    {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'].map((month, index) => {
-                      const values = [18, 22, 30, 25, 28, 32];
-                      const maxValue = Math.max(...values);
-                      const height = (values[index] / maxValue) * 100;
-                      
-                      return (
-                        <div key={month} className="flex flex-col items-center">
-                          <div 
-                            className="w-8 bg-[#DDA76A] rounded-t-sm" 
-                            style={{ height: `${height}%` }}
-                            aria-label={`${values[index]} vistorias em ${month}`}
-                          ></div>
-                          <p className="text-xs text-gray-500 mt-2">{month}</p>
-                          <p className="text-xs font-medium">{values[index]}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+              <PerformanceChart 
+                data={monthlyChartData}
+                title="Tendência de crescimento mensal"
+                height={250}
+                showValues={true}
+                animated={true}
+              />
             </div>
           </div>
         </div>
