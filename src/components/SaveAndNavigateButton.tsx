@@ -1,5 +1,4 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 interface SaveAndNavigateButtonProps {
@@ -9,13 +8,15 @@ interface SaveAndNavigateButtonProps {
 
 export function SaveAndNavigateButton({ onSave, className = '' }: SaveAndNavigateButtonProps) {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
 
   const handleClick = async () => {
     try {
       if (onSave) {
         await onSave();
       }
-      navigate('/ambiente-externo');
+      // Navega para a página de ambiente externo com o ID da inspeção
+      navigate(`/ambiente-externo/${id}`);
     } catch (error) {
       console.error('Error saving:', error);
     }

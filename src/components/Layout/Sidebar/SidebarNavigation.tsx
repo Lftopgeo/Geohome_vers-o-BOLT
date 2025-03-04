@@ -3,10 +3,6 @@ import { Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   ClipboardList, 
-  Home, 
-  Building2, 
-  Key, 
-  FileText,
   Settings,
   Users
 } from 'lucide-react';
@@ -21,15 +17,6 @@ const navigationItems = [
     items: [
       { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
       { name: 'Nova Vistoria', icon: ClipboardList, path: '/nova-vistoria' }
-    ]
-  },
-  {
-    title: 'Vistoria',
-    items: [
-      { name: 'Ambiente Interno', icon: Home, path: '/ambiente-interno' },
-      { name: 'Ambiente Externo', icon: Building2, path: '/ambiente-externo' },
-      { name: 'Chaves e Medidores', icon: Key, path: '/chaves-medidores' },
-      { name: 'Relatório', icon: FileText, path: '/relatorio' }
     ]
   },
   {
@@ -50,12 +37,12 @@ export function SidebarNavigation({ currentPath }: SidebarNavigationProps) {
             {section.title}
           </h2>
           <ul className="space-y-1">
-            {section.items.map((item) => {
+            {section.items.map((item, itemIndex) => {
               const isActive = currentPath === item.path;
               const Icon = item.icon;
               
               return (
-                <li key={item.path}>
+                <li key={itemIndex}>
                   <Link
                     to={item.path}
                     className={`

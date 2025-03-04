@@ -1,8 +1,8 @@
 export interface InspectionStep {
   id: string;
-  icon: React.ComponentType<{ size: number; className?: string }>;
+  icon: React.ComponentType<{ size?: string | number; className?: string }>;
   label: string;
-  path: string;
+  path?: string;
   description: string;
 }
 
