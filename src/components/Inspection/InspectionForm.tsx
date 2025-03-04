@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PropertyDetails } from './PropertyDetails';
 import { InspectionDetails } from './InspectionDetails';
 import { PropertyProvider } from '../../contexts/PropertyContext';
+import { saveInspection } from '../../services/inspectionService';
 
 export function InspectionForm() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [inspectionId, setInspectionId] = useState<string | null>(null);
   
   // Função para validar o formulário
   const validateForm = (form: HTMLFormElement): boolean => {
@@ -56,21 +60,22 @@ export function InspectionForm() {
     
     // Capturar os dados do formulário
     const newFormData = captureFormData(form);
-    setFormData({ ...formData, ...newFormData });
+    const combinedFormData = { ...formData, ...newFormData };
+    setFormData(combinedFormData);
     
     try {
       setLoading(true);
       setError(null);
       
-      // Simular uma chamada de API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Salvar os dados da inspeção
+      const savedInspection = await saveInspection(combinedFormData);
       
-      // Gerar um ID de inspeção aleatório
-      const inspectionId = `INS-${Math.floor(Math.random() * 10000)}`;
+      // Armazenar o ID da inspeção
+      setInspectionId(savedInspection.id);
       
       // Mostrar mensagem de sucesso
       setSuccess(true);
-      console.log('Dados do formulário enviados:', { ...formData, ...newFormData, inspectionId });
+      console.log('Dados do formulário enviados:', savedInspection);
       
       // Avançar para o próximo passo após 1 segundo
       setTimeout(() => {
@@ -80,6 +85,15 @@ export function InspectionForm() {
     } catch (err) {
       setError('Ocorreu um erro ao salvar os dados. Por favor, tente novamente.');
       setLoading(false);
+    }
+  };
+  
+  // Função para redirecionar para a página de áreas de vistoria
+  const handleStartPhotoRegistration = () => {
+    if (inspectionId) {
+      navigate(`/areas-vistoria/${inspectionId}`);
+    } else {
+      setError('Erro ao obter o ID da inspeção. Por favor, tente novamente.');
     }
   };
   
@@ -179,10 +193,7 @@ export function InspectionForm() {
                 <button
                   type="button"
                   className="px-6 py-2 bg-[#19384A] text-white rounded-lg hover:bg-[#0f2a3d] transition-colors"
-                  onClick={() => {
-                    // Redirecionar para a página de registro fotográfico
-                    console.log('Redirecionando para o registro fotográfico...');
-                  }}
+                  onClick={handleStartPhotoRegistration}
                 >
                   Iniciar Registro Fotográfico
                 </button>

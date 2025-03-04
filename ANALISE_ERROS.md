@@ -52,6 +52,36 @@ Este documento contém uma análise detalhada dos erros encontrados nos componen
 1. **Refatoração para Abordagem Declarativa**: Refatorar a função `loadChart` para usar a abordagem declarativa do React.
 2. **Limpeza de Timeouts**: Adicionar limpeza de timeouts no `useEffect` para evitar vazamentos de memória.
 
+## 6. Problemas com Importações e Dependências
+
+### Problema: Falha na importação do Supabase
+**Descrição**: O pacote `@supabase/supabase-js` não está sendo importado corretamente, causando erros na inicialização da aplicação.
+
+**Solução**: Implementação de dados mockados para simular as respostas da API do Supabase, permitindo o desenvolvimento contínuo enquanto o problema de importação é resolvido.
+
+### Problema: Falha na importação do pacote uuid
+**Descrição**: O pacote `uuid` não está sendo resolvido corretamente pelo Vite, causando o erro: `[plugin:vite:import-analysis] Failed to resolve import "uuid" from "src/services/inspectionService.ts". Does the file exist?`
+
+**Solução**: Implementação de uma função personalizada `generateUniqueId()` que combina timestamp e números aleatórios para criar identificadores únicos, eliminando a dependência do pacote externo.
+
+**Detalhes da Implementação**:
+```typescript
+function generateUniqueId(): string {
+  // Gerar um timestamp em milissegundos
+  const timestamp = Date.now().toString();
+  
+  // Gerar um número aleatório entre 0 e 9999
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  
+  // Combinar timestamp e número aleatório e pegar os últimos 8 caracteres
+  const uniqueString = (timestamp + random).slice(-8);
+  
+  return `INS-${uniqueString}`;
+}
+```
+
+Esta solução garante IDs únicos com alta probabilidade, suficientes para o ambiente de desenvolvimento.
+
 ## Soluções Implementadas
 
 A seguir, detalhamos as correções aplicadas a cada componente:

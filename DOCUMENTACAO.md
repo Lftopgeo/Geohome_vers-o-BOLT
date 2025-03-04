@@ -32,7 +32,13 @@ O frontend do Geohome é uma aplicação de página única (SPA) que oferece uma
 1. **Login**: Autenticação do usuário
 2. **Dashboard**: Visão geral das vistorias e opções disponíveis
 3. **Nova Vistoria**: Criação de uma nova vistoria com dados básicos
-4. **Áreas de Vistoria**: Definição das áreas a serem vistoriadas
+   - Preenchimento de detalhes do imóvel (com busca automática por CEP)
+   - Preenchimento de detalhes da vistoria
+   - Confirmação e redirecionamento para registro fotográfico
+4. **Áreas de Vistoria**: Seleção de áreas para registro fotográfico
+   - Ambiente Interno
+   - Ambiente Externo
+   - Chaves e Medidores
 5. **Ambiente Interno**: Registro de condições dos cômodos internos
 6. **Ambiente Externo**: Registro de condições das áreas externas
 7. **Chaves e Medidores**: Registro de chaves e leituras de medidores
@@ -324,3 +330,26 @@ O Geohome representa uma solução completa e profissional para vistorias técni
 - Preenchimento automático dos campos de endereço
 - Validação de CEP
 - Formatação de CEP
+
+### Serviço de Inspeção
+
+O sistema implementa um serviço completo para gerenciamento de inspeções que permite:
+
+- **Criação de Inspeções**: Salva os dados básicos da inspeção (propriedade, endereço, inspetor)
+- **Recuperação de Inspeções**: Carrega os dados de uma inspeção específica pelo ID
+- **Listagem de Inspeções**: Exibe todas as inspeções ordenadas por data
+- **Atualização de Status**: Permite alterar o status da inspeção (rascunho, em andamento, concluída)
+
+O serviço utiliza armazenamento local (localStorage) para persistência de dados quando o Supabase não está disponível, garantindo que os dados não sejam perdidos entre sessões do navegador.
+
+### Navegação entre Etapas da Vistoria
+
+O sistema implementa um fluxo de navegação intuitivo que guia o usuário através do processo de vistoria:
+
+1. **Formulário Inicial**: Coleta de dados básicos da propriedade e da vistoria
+2. **Confirmação**: Exibição de mensagem de sucesso e opção para iniciar o registro fotográfico
+3. **Seleção de Áreas**: Interface visual para escolha das áreas a serem vistoriadas
+4. **Registro por Área**: Páginas específicas para cada tipo de ambiente
+5. **Relatório Final**: Compilação de todos os dados coletados em um relatório
+
+Este fluxo foi projetado para ser intuitivo e eficiente, minimizando o tempo necessário para realizar uma vistoria completa.
