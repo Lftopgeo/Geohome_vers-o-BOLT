@@ -15,12 +15,25 @@ export class ReportService {
     }
   }
 
-  static async uploadToCloud(file: Blob): Promise<string> {
+  /**
+   * Uploads a PDF file to cloud storage
+   * @param file - The PDF file blob to upload
+   * @returns A promise that resolves to the URL of the uploaded file
+   * @todo Implement cloud storage integration
+   */
+  static async uploadToCloud(/* file: Blob */): Promise<string> {
     // This would upload the file to your cloud storage
     throw new Error('Not implemented');
   }
 
-  static async sendEmail(report: InspectionReport, pdfUrl: string): Promise<void> {
+  /**
+   * Sends an email with the report
+   * @param report - The inspection report data
+   * @param pdfUrl - The URL of the uploaded PDF
+   * @returns A promise that resolves when the email is sent
+   * @todo Implement email service integration
+   */
+  static async sendEmail(/* report: InspectionReport, pdfUrl: string */): Promise<void> {
     // This would send the email with the report
     throw new Error('Not implemented');
   }

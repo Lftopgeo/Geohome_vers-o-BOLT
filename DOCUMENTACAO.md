@@ -38,6 +38,31 @@ O frontend do Geohome é uma aplicação de página única (SPA) que oferece uma
 7. **Chaves e Medidores**: Registro de chaves e leituras de medidores
 8. **Relatório**: Visualização e geração do relatório final em PDF
 
+### Dashboard
+
+O dashboard do Geohome oferece uma visão geral completa das atividades de vistoria, incluindo:
+
+- **Cards de Estatísticas**: Exibição de métricas importantes como total de vistorias, vistorias concluídas, pendentes e em andamento
+- **Lista de Próximas Vistorias**: Exibição das vistorias agendadas com detalhes relevantes
+- **Atividades Recentes**: Registro das últimas ações realizadas no sistema
+- **Calendário de Vistorias**: Visualização das vistorias agendadas em formato de calendário
+- **Informações da Equipe**: Detalhes sobre os inspetores e suas atividades
+- **Visualização de Dados**: Apresentação de estatísticas em formato visual usando elementos HTML/CSS nativos
+
+#### Solução para Visualização de Dados
+
+Inicialmente, o dashboard utilizava a biblioteca Chart.js para gráficos interativos. Devido a desafios de compatibilidade, implementamos uma solução alternativa:
+
+- **Gráficos Baseados em HTML/CSS**: Construção de visualizações usando elementos div com altura dinâmica
+- **Estatísticas em Cards**: Apresentação de dados em formato de cards informativos
+- **Elementos Visuais Simplificados**: Uso de ícones e cores para representar informações
+
+Esta abordagem oferece várias vantagens:
+- Carregamento mais rápido da página
+- Menor dependência de bibliotecas externas
+- Melhor compatibilidade entre navegadores
+- Facilidade de manutenção
+
 ### Melhores Práticas de UI/UX
 
 - **Design Responsivo**: Interface adaptável a diferentes tamanhos de tela
@@ -45,7 +70,11 @@ O frontend do Geohome é uma aplicação de página única (SPA) que oferece uma
 - **Formulários Intuitivos**: Campos organizados logicamente com validação em tempo real
 - **Navegação Simplificada**: Menu de navegação consistente e breadcrumbs
 - **Modo Offline**: Capacidade de trabalhar offline com sincronização posterior
-- **Acessibilidade**: Conformidade com diretrizes WCAG para acessibilidade
+- **Acessibilidade**: Conformidade com diretrizes WCAG para acessibilidade, incluindo:
+  - Texto alternativo para elementos visuais
+  - Atributos ARIA para componentes interativos
+  - Contraste adequado de cores
+  - Navegação por teclado
 
 ## 3. Backend
 
@@ -63,6 +92,15 @@ O backend do Geohome segue uma arquitetura MVC (Model-View-Controller) adaptada 
 - **Validação**: Express Validator
 - **Variáveis de Ambiente**: Dotenv
 - **CORS**: Cors
+
+### Integração com Supabase
+
+O Geohome utiliza o Supabase como plataforma de banco de dados e autenticação. Para garantir a robustez da aplicação, implementamos:
+
+- **Modo de Desenvolvimento com Dados Mockados**: Em situações onde a conexão com o Supabase não está disponível, o sistema utiliza dados mockados para permitir o desenvolvimento e testes
+- **Simulação de Atrasos de Rede**: Os dados mockados são entregues com atrasos simulados para replicar a experiência real de API
+- **Estrutura de Dados Consistente**: Os dados mockados seguem a mesma estrutura dos dados reais do Supabase
+- **Políticas de Segurança**: Scripts de migração com verificações de existência para evitar erros de políticas duplicadas
 
 ### Gerenciamento de Dados
 
@@ -167,6 +205,7 @@ O processo de geração do relatório envolve:
 - **Processamento Assíncrono**: Operações pesadas como geração de PDF executadas assincronamente
 - **Arquitetura Modular**: Componentes independentes que facilitam a manutenção e escalabilidade
 - **Supabase**: Plataforma escalável que gerencia automaticamente recursos de banco de dados
+- **Soluções Alternativas**: Implementação de fallbacks para componentes críticos em caso de problemas
 
 ### Considerações Finais
 
@@ -177,6 +216,7 @@ O Geohome representa uma solução completa e profissional para vistorias técni
 - Banco de dados bem estruturado com políticas de segurança
 - Geração de relatórios profissionais
 - Fluxo de trabalho otimizado para inspetores
+- Soluções resilientes para garantir funcionamento contínuo
 
 #### Melhorias Futuras
 
@@ -185,6 +225,7 @@ O Geohome representa uma solução completa e profissional para vistorias técni
 - Recursos avançados de IA para detecção automática de problemas em fotos
 - Expansão para outros tipos de vistorias técnicas
 - Dashboard analítico para gestão de múltiplos inspetores
+- Implementação de biblioteca de gráficos mais robusta e compatível
 
 ## 7. Diagramas
 
@@ -200,7 +241,7 @@ O Geohome representa uma solução completa e profissional para vistorias técni
                                                ▼
                                         ┌─────────────┐
                                         │             │
-                                        │  Supabase   │
+                                        │   Supabase  │
                                         │ (PostgreSQL)│
                                         │             │
                                         └─────────────┘
@@ -217,29 +258,35 @@ O Geohome representa uma solução completa e profissional para vistorias técni
 ┌─────────┐     ┌─────────┐     ┌─────────┐         │
 │         │     │         │     │         │         │
 │Relatório│◀────│ Chaves e│◀────│ Ambiente│◀────────┘
-│   PDF   │     │Medidores│     │ Externo │
+│  Final  │     │Medidores│     │ Externo │
+│         │     │         │     │         │
 └─────────┘     └─────────┘     └─────────┘
 ```
 
-### Diagrama ER Simplificado
+### Diagrama de Componentes do Dashboard
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Users     │     │ Inspections │     │    Rooms    │
-│             │1   *│             │1   *│             │
-│ id          │────▶│ id          │────▶│ id          │
-│ email       │     │ property_data│     │ name        │
-│ password    │     │ status      │     │ condition   │
-└─────────────┘     └──────┬──────┘     └─────────────┘
-                           │
-                           │
-         ┌─────────────────┼─────────────────┐
-         │                 │                 │
-         ▼                 ▼                 ▼
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│External Areas│    │ Keys/Meters │    │   Photos    │
-│             │    │             │    │             │
-│ id          │    │ id          │    │ id          │
-│ name        │    │ type        │    │ filename    │
-│ condition   │    │ reading     │    │ room_id     │
-└─────────────┘    └─────────────┘    └─────────────┘
+┌─────────────────────────────────────────────────────┐
+│                      Dashboard                       │
+├─────────────┬─────────────┬───────────┬─────────────┤
+│             │             │           │             │
+│  Estatísticas  │  Próximas   │ Atividades │  Calendário  │
+│    Cards    │  Vistorias  │  Recentes │             │
+│             │             │           │             │
+├─────────────┴─────────────┼───────────┴─────────────┤
+│                           │                         │
+│      Equipe de            │     Visualização        │
+│    Vistoriadores          │      de Dados           │
+│                           │                         │
+└───────────────────────────┴─────────────────────────┘
 ```
+
+## 8. Histórico de Atualizações
+
+### Versão 1.0.0 (01/03/2025)
+- Lançamento inicial do sistema
+
+### Versão 1.0.1 (03/03/2025)
+- Correção de políticas de segurança no Supabase
+- Implementação de solução alternativa para problemas de conexão com o Supabase
+- Substituição do componente de gráficos por visualização baseada em HTML/CSS
+- Melhorias de acessibilidade no calendário e outros componentes
