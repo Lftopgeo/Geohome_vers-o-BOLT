@@ -1,7 +1,9 @@
 # Análise de Erros e Soluções - Geohome
 
 Este documento contém uma análise detalhada dos erros encontrados nos componentes do Geohome e suas respectivas soluções.
+A implementação segue uma estratégia de "graceful degradation" que permite que o aplicativo funcione mesmo quando o Supabase não está disponível. Cada serviço verifica a disponibilidade do Supabase antes de realizar operações e, caso não esteja disponível, utiliza o localStorage como fallback.
 
+Para testar a integração, basta executar o aplicativo. Ele tentará se conectar ao Supabase automaticamente e exibirá mensagens no console indicando se a conexão foi bem-sucedida. Caso contrário, utilizará o fallback para localStorage, mantendo a compatibilidade com a solução anterior baseada em dados mockados.
 ## 1. Problemas no CalendarWidget.tsx
 
 ### Problemas Identificados:
@@ -81,6 +83,135 @@ function generateUniqueId(): string {
 ```
 
 Esta solução garante IDs únicos com alta probabilidade, suficientes para o ambiente de desenvolvimento.
+
+## 2. Problemas com a Integração do Supabase
+
+### Problemas Identificados:
+
+1. **Erro de importação do pacote @supabase/supabase-js**:
+   ```
+   [plugin:vite:import-analysis] Failed to resolve import "@supabase/supabase-js" from "src/lib/supabase.ts". Does the file exist?
+   ```
+
+2. **Erro de referência ao objeto process**:
+   ```
+   Uncaught ReferenceError: process is not defined at supabaseFetch.ts:7:21
+   ```
+
+3. **Erro de resolução de nome ao tentar conectar ao Supabase**:
+   ```
+   Failed to load resource: net::ERR_NAME_NOT_RESOLVED
+   ```
+
+### Causas:
+
+1. **Incompatibilidade entre o pacote @supabase/supabase-js e o Vite**: O Vite tem dificuldade em resolver a importação do pacote Supabase.
+2. **Uso de process.env no navegador**: O objeto `process` não está disponível no ambiente do navegador, apenas no Node.js.
+3. **Configuração incorreta das variáveis de ambiente**: As variáveis de ambiente não estavam no formato esperado pelo Vite.
+
+### Soluções Implementadas:
+
+1. **Cliente Supabase Alternativo**: Criamos uma implementação simplificada do cliente Supabase usando a API Fetch nativa do JavaScript em `src/lib/supabaseFetch.ts`.
+2. **Uso de import.meta.env**: Substituímos `process.env` por `import.meta.env` para compatibilidade com o Vite.
+3. **Arquivo .env.development**: Criamos um arquivo com as variáveis de ambiente no formato do Vite (prefixo VITE_).
+4. **Logs de Depuração**: Adicionamos logs detalhados para facilitar a identificação de problemas.
+5. **Fallback para localStorage**: Mantivemos o mecanismo de fallback para garantir que o aplicativo funcione mesmo sem conexão com o Supabase.
+
+### Resultados:
+
+A solução alternativa permite que o aplicativo funcione sem depender do pacote oficial do Supabase, contornando os problemas de importação. O sistema tenta se conectar ao Supabase e, caso não consiga, utiliza o localStorage como fallback.
+
+Para mais detalhes sobre a implementação, consulte o arquivo [SOLUCAO_ALTERNATIVA_SUPABASE.md](./SOLUCAO_ALTERNATIVA_SUPABASE.md).
+
+## Erro na geração de PDF - Assinatura corrompida ou incompleta
+
+### Problema
+Durante a geração do PDF de relatório, foram encontrados os seguintes erros:
+
+```
+Error adding signature: Error: Incomplete or corrupt PNG file
+Error generating PDF: ReferenceError: addFallbackSignature is not defined
+```
+
+O primeiro erro ocorre quando a imagem da assinatura está corrompida ou em formato inválido. O segundo erro ocorre porque a função de fallback para lidar com assinaturas inválidas não estava implementada.
+
+### Causa
+1. O sistema tenta adicionar uma assinatura ao PDF, mas a imagem pode estar corrompida ou em formato inválido
+2. A função `addFallbackSignature` era referenciada no código, mas não estava implementada
+3. Não havia tratamento adequado para casos em que a assinatura não pudesse ser carregada
+
+### Solução
+Implementamos as seguintes melhorias:
+
+1. Criamos a função `addFallbackSignature` no arquivo `signatureUtils.ts`:
+   - Desenha uma linha simples para representar a assinatura
+   - Adiciona o texto "Assinatura digital" acima da linha
+   - Inclui o nome e registro do inspetor abaixo da linha
+
+2. Implementamos a função `addSignatureText` para centralizar a lógica de adicionar o texto da assinatura
+
+3. Melhoramos o tratamento de erros para garantir que, mesmo se houver problemas com a assinatura, o PDF ainda possa ser gerado corretamente
+
+### Código implementado
+
+```typescript
+export function addFallbackSignature(doc: jsPDF, options: SignatureOptions): void {
+  // Salvar o estado atual do documento
+  const currentFontSize = doc.getFontSize();
+  const currentFont = doc.getFont();
+  
+  try {
+    // Adicionar uma linha para a assinatura
+    doc.setDrawColor(0, 0, 0);
+    doc.line(options.x, options.y + 20, options.x + 50, options.y + 20);
+    
+    // Adicionar texto de assinatura
+    addSignatureText(doc, options);
+    
+    // Adicionar texto indicando assinatura digital
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Assinatura digital', options.x, options.y + 15);
+  } catch (error) {
+    console.error('Error adding fallback signature:', error);
+  } finally {
+    // Restaurar o estado do documento
+    doc.setFontSize(currentFontSize);
+    doc.setFont(currentFont);
+  }
+}
+```
+
+Esta solução garante que o PDF sempre será gerado, mesmo quando houver problemas com a imagem da assinatura.
+
+## Erros de conexão com o Supabase
+
+### Problema
+Foram observados erros de conexão com o Supabase durante a execução do aplicativo:
+
+```
+Failed to load resource: the server responded with a status of 400 ()
+Erro ao buscar inspeções do Supabase, usando fallback: Object
+Failed to load resource: the server responded with a status of 404 ()
+Erro ao buscar estatísticas do Supabase, usando fallback: Object
+```
+
+### Causa
+Os erros 400 e 404 indicam problemas de comunicação com a API do Supabase. Isso pode ser devido a:
+1. Problemas de configuração da conexão com o Supabase
+2. Endpoints incorretos ou inexistentes
+3. Problemas temporários de rede ou com o servidor do Supabase
+
+### Solução atual
+Atualmente, o sistema já implementa um mecanismo de fallback que utiliza dados mockados quando não consegue se conectar ao Supabase. Esta solução permite que o aplicativo continue funcionando mesmo sem conexão com o backend.
+
+### Próximos passos
+Para resolver definitivamente os problemas de conexão com o Supabase, recomenda-se:
+
+1. Verificar as configurações de conexão com o Supabase (URL, chaves de API)
+2. Confirmar se os endpoints estão corretos e existem no backend
+3. Implementar um sistema de retry para tentativas de conexão em caso de falhas temporárias
+4. Melhorar o sistema de logs para facilitar a identificação da causa raiz dos problemas de conexão
 
 ## Soluções Implementadas
 

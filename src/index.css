@@ -1,3 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Importar CSS do Leaflet para o mapa */
+@import 'leaflet/dist/leaflet.css';

@@ -12,7 +12,8 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Database
+  Database,
+  MapPin
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -22,7 +23,7 @@ import { StatCard } from '../components/Dashboard/StatCard';
 import { InspectionCard } from '../components/Dashboard/InspectionCard';
 import { RecentActivityCard } from '../components/Dashboard/RecentActivityCard';
 import { CalendarWidget } from '../components/Dashboard/CalendarWidget';
-import { PerformanceChart } from '../components/Dashboard/PerformanceChart';
+import { InspectionMapAlternative as InspectionMap } from '../components/Dashboard/InspectionMapAlternative';
 
 // Serviços de API
 import { 
@@ -34,7 +35,7 @@ import {
 } from '../services/api';
 
 // Tipos de dados
-import type { InspectionSummary, Activity, DashboardStats, ChartData } from '../types/dashboard';
+import type { InspectionSummary, Activity, DashboardStats } from '../types/dashboard';
 
 export function DashboardPage() {
   const [inspections, setInspections] = useState<InspectionSummary[]>([]);
@@ -50,19 +51,6 @@ export function DashboardPage() {
   const [searchQuery] = useState<string>('');
   const [connectionStatus, setConnectionStatus] = useState({ isSupabaseAvailable: false, lastChecked: '' });
   const [isRetrying, setIsRetrying] = useState(false);
-
-  // Dados para o gráfico de vistorias por tipo de imóvel
-  const propertyTypeChartData: ChartData = {
-    labels: ['Apto', 'Casa', 'Comercial', 'Industrial'],
-    values: [42, 28, 18, 12],
-    colors: ['#4F46E5', '#10B981', '#F59E0B', '#EC4899']
-  };
-
-  // Dados para o gráfico de vistorias por mês
-  const monthlyChartData: ChartData = {
-    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-    values: [18, 22, 30, 25, 28, 32]
-  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -312,34 +300,20 @@ export function DashboardPage() {
           </div>
         </div>
         
-        {/* Gráficos de Desempenho - Melhorados com o novo componente PerformanceChart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Mapa de Geolocalização das Vistorias */}
+        <div className="grid grid-cols-1 gap-6">
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-6 border-b border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-800">Vistorias por Tipo de Imóvel</h2>
+              <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                <MapPin size={20} className="mr-2" />
+                Mapa de Vistorias
+              </h2>
             </div>
             <div className="p-6">
-              <PerformanceChart 
-                data={propertyTypeChartData}
-                title="Distribuição por tipo de imóvel"
-                height={250}
-                showValues={true}
-                animated={true}
-              />
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-800">Vistorias por Mês</h2>
-            </div>
-            <div className="p-6">
-              <PerformanceChart 
-                data={monthlyChartData}
-                title="Tendência de crescimento mensal"
-                height={250}
-                showValues={true}
-                animated={true}
+              <InspectionMap 
+                inspections={inspections}
+                height={500}
+                isLoading={isLoading}
               />
             </div>
           </div>
